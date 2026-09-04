@@ -1,5 +1,5 @@
 {
-  "name": "@sendbird-ai/eve-agent-reporting",
+  "name": "@bshaan77/eve-agent-reporting",
   "version": "0.1.0",
   "description": "Shared reporting client for Sendbird eve agents — standardized usage/audience event reporting to the Automators dashboard.",
   "type": "module",

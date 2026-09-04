@@ -1,4 +1,4 @@
-# @sendbird-ai/eve-agent-reporting
+# @bshaan77/eve-agent-reporting
 
 Shared reporting client for Sendbird [eve](https://vercel.com/docs/eve) agents. Standardizes how every eve agent — in the automators monorepo or an external repo — reports usage events to the Automators dashboard, instead of each agent hand-maintaining its own copy of this HTTP call.
 
@@ -7,13 +7,13 @@ This package covers the **reporting client only**: constructing and POSTing the 
 ## Install
 
 ```bash
-npm install @sendbird-ai/eve-agent-reporting
+npm install @bshaan77/eve-agent-reporting
 ```
 
 ## Usage
 
 ```ts
-import { reportInboundEvent } from "@sendbird-ai/eve-agent-reporting";
+import { reportInboundEvent } from "@bshaan77/eve-agent-reporting";
 
 // Inside a message.completed handler, after a successful reply:
 void reportInboundEvent({
