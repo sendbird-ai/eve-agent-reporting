@@ -27,7 +27,33 @@ void reportInboundEvent({
 
 Reads `AUTOMATORS_MCP_TOKEN` from `process.env` at call time — the same token every agent already uses for its Automators MCP connection. Never accepted as a parameter, so it can't be accidentally logged or passed through. Silently no-ops when the token is unset, and swallows request failures after logging one — a broken reporting call must never fail the turn it's reporting on.
 
+## Usage — outbound + audience evidence (v0.2.0+)
+
+```ts
+import { reportOutboundEvent, reportAudienceEvidence, extractTaggedUserIds } from "@bshaan77/eve-agent-reporting";
+
+// After an outbound Slack post (reactive reply, scheduled digest, tool send, ...):
+void reportOutboundEvent({
+  slug: "automators--wiki-eve",
+  slackMessageTs: postedMessage.ts,
+  channelId,
+  isThreadReply: channelId === threadRootChannelId && postedMessage.ts !== postedMessage.threadTs,
+  sourceTool: "reactive-reply",
+});
+
+// Audience evidence — one or more rows per call (e.g. a whole group DM roster):
+void reportAudienceEvidence({
+  slug: "automators--wiki-eve",
+  entries: [
+    { slackUserId: triggeringUserId, evidenceKind: "TRIGGERED", channelId, sourceEventId: eventTs },
+  ],
+});
+
+// Pure helper for channel broadcasts with no structured recipient:
+const taggedIds = extractTaggedUserIds(messageText); // e.g. ["U123ABC", "U456DEF"]
+```
+
 ## Versioning
 
 - **v0.1.x** — `reportInboundEvent` only, matching the wire shape every agent already used before this package existed.
-- **v0.2.x** (planned) — adds `reportOutboundEvent`, `reportAudienceEvidence`, and `extractTaggedUserIds`, per [spec 2.53](https://app.notion.com/p/3cac36aa12c281fca34aec78b37ac7c1).
+- **v0.2.x** — adds `reportOutboundEvent`, `reportAudienceEvidence`, and `extractTaggedUserIds`, per [spec 2.53](https://app.notion.com/p/3cac36aa12c281fca34aec78b37ac7c1).
