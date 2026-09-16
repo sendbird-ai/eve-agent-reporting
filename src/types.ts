@@ -1,11 +1,6 @@
-/**
- * Payload for reportInboundEvent — one row in EveAgentConversationEvent per
- * completed Slack turn. Matches the existing /api/eve-agents/[slug]/events
- * wire shape exactly (spec 2.49); this package standardizes the call site,
- * not the schema.
- */
+/** A received Slack interaction. Reuse sessionTurnKey when retrying an event. */
 export interface ReportInboundEventParams {
-  /** The agent's registered EveAgent slug, e.g. "automators--wiki-eve" or "harper-eve". */
+  /** Agent identifier understood by your receiver, e.g. "support-assistant". */
   slug: string;
   slackUserId: string;
   channelId: string;
@@ -13,30 +8,18 @@ export interface ReportInboundEventParams {
   messageCount?: number;
 }
 
-/**
- * Payload for reportOutboundEvent — one row in EveAgentOutboundMessage per
- * outbound Slack post, across every send site (reactive reply, scheduled
- * digest, deterministic tool send, ...). Identified by the real Slack
- * message ts, not the inbound turn key — an inbound+outbound pair from the
- * same turn must never collide (spec 2.53).
- */
+/** A sent Slack message, identified by its actual Slack message timestamp. */
 export interface ReportOutboundEventParams {
-  /** The agent's registered EveAgent slug, e.g. "automators--wiki-eve" or "harper-eve". */
   slug: string;
   slackMessageTs: string;
   channelId: string;
   teamId?: string | null;
-  /** True when this post replied into an existing thread. Defaults to false server-side. */
   isThreadReply?: boolean;
-  /** Which send site produced this post, e.g. "reactive-reply" / "post_payroll_preview". Free-form, for debugging only. */
+  /** Optional label describing the sender, e.g. "scheduled-summary". */
   sourceTool?: string | null;
 }
 
-/**
- * Every evidence kind an agent can credit a Slack user under for a given
- * range's audience roster (spec 2.53). Kept as a union here (not imported
- * from the database package) so this package never depends on Prisma.
- */
+/** How a Slack user participated in, or was addressed by, an interaction. */
 export type EveAudienceEvidenceKind =
   | "TRIGGERED"
   | "GROUP_DM_MEMBER"
@@ -48,13 +31,12 @@ export interface AudienceEvidenceEntryParams {
   evidenceKind: EveAudienceEvidenceKind;
   channelId: string;
   teamId?: string | null;
-  /** A Slack ts (the triggering inbound message's, or the outbound post's) that makes this occurrence idempotent. Required — see the schema's own comment on why this can't be optional. */
+  /** Stable identifier for this occurrence, typically a Slack message timestamp. */
   sourceEventId: string;
 }
 
-/** Payload for reportAudienceEvidence — one call can report a whole batch (e.g. a group DM's full roster) at once. */
+/** Batch of observations about the audience of an agent. */
 export interface ReportAudienceEvidenceParams {
-  /** The agent's registered EveAgent slug, e.g. "automators--wiki-eve" or "harper-eve". */
   slug: string;
   entries: AudienceEvidenceEntryParams[];
 }
