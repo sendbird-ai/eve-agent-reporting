@@ -1,59 +1,136 @@
-# @bshaan77/eve-agent-reporting
+# eve-agent-reporting
 
-Shared reporting client for Sendbird [eve](https://vercel.com/docs/eve) agents. Standardizes how every eve agent — in the automators monorepo or an external repo — reports usage events to the Automators dashboard, instead of each agent hand-maintaining its own copy of this HTTP call.
+A dependency-free TypeScript client for reporting Slack agent interactions, sent
+messages, and audience participation to **your own reporting service**.
 
-This package covers the **reporting client only**: constructing and POSTing the event payload. It does not — and cannot — cover an agent's own event *capture* (reading `channel`/`ctx` from eve's runtime, diffing thread replies, etc.), since that needs each agent's own eve runtime objects and differs by dispatch shape. An agent's `channels/slack.ts` does its own capture, then calls this package's exports with the result.
+Works with any server-side Slack agent, including Eve agents. No Eve SDK,
+Sendbird account, or company dashboard is required by the configurable client.
+The event model is Slack-specific; this package does not collect events from
+Slack or provide hosted storage, analytics, or a dashboard.
 
 ## Install
 
-```bash
+```sh
 npm install @bshaan77/eve-agent-reporting
 ```
 
-## Usage
+Requires Node.js 20+ and ES modules. The API below is introduced in **0.3.0**.
+If that release is not yet published, build this checkout to try it.
+
+## Configure your client
 
 ```ts
-import { reportInboundEvent } from "@bshaan77/eve-agent-reporting";
+import { createReportingClient } from "@bshaan77/eve-agent-reporting/client";
 
-// Inside a message.completed handler, after a successful reply:
-void reportInboundEvent({
-  slug: "automators--wiki-eve", // this agent's registered EveAgent slug
-  slackUserId: triggeringUserId,
-  channelId,
-  sessionTurnKey: `${ctx.session.id}:${ctx.session.turn.id}`,
+const reporting = createReportingClient({
+  baseUrl: "https://reports.example.com/api/agents",
+  token: () => process.env.REPORTING_TOKEN,
+  onError: ({ event, kind, status }) => {
+    console.error("Reporting failed", { event, kind, status });
+  },
+});
+
+await reporting.reportInboundEvent({
+  slug: "support-assistant",
+  slackUserId: "U123ABC",
+  channelId: "C123ABC",
+  sessionTurnKey: "1750000000.000001",
   messageCount: 1,
 });
 ```
 
-Reads `AUTOMATORS_MCP_TOKEN` from `process.env` at call time — the same token every agent already uses for its Automators MCP connection. Never accepted as a parameter, so it can't be accidentally logged or passed through. Silently no-ops when the token is unset, and swallows request failures after logging one — a broken reporting call must never fail the turn it's reporting on.
+Your receiver gets a JSON POST at
+`https://reports.example.com/api/agents/support-assistant/events`, authenticated
+with your Bearer token. The collection URL is required. The new client never
+reads environment variables implicitly or falls back to another organization's
+server. Independent clients can use different destinations and credentials.
 
-## Usage — outbound + audience evidence (v0.2.0+)
+The `/client` entry point excludes the legacy adapter. The package root also
+exports `createReportingClient`, alongside the old functions for compatibility.
+
+## Outbound messages and audience
 
 ```ts
-import { reportOutboundEvent, reportAudienceEvidence, extractTaggedUserIds } from "@bshaan77/eve-agent-reporting";
+import { extractTaggedUserIds } from "@bshaan77/eve-agent-reporting/client";
 
-// After an outbound Slack post (reactive reply, scheduled digest, tool send, ...):
-void reportOutboundEvent({
-  slug: "automators--wiki-eve",
-  slackMessageTs: postedMessage.ts,
-  channelId,
-  isThreadReply: channelId === threadRootChannelId && postedMessage.ts !== postedMessage.threadTs,
+await reporting.reportOutboundEvent({
+  slug: "support-assistant",
+  slackMessageTs: "1750000001.000001",
+  channelId: "C123ABC",
+  isThreadReply: true,
   sourceTool: "reactive-reply",
 });
 
-// Audience evidence — one or more rows per call (e.g. a whole group DM roster):
-void reportAudienceEvidence({
-  slug: "automators--wiki-eve",
+await reporting.reportAudienceEvidence({
+  slug: "support-assistant",
   entries: [
-    { slackUserId: triggeringUserId, evidenceKind: "TRIGGERED", channelId, sourceEventId: eventTs },
+    {
+      slackUserId: "U123ABC",
+      evidenceKind: "TRIGGERED",
+      channelId: "C123ABC",
+      sourceEventId: "1750000000.000001",
+    },
   ],
 });
 
-// Pure helper for channel broadcasts with no structured recipient:
-const taggedIds = extractTaggedUserIds(messageText); // e.g. ["U123ABC", "U456DEF"]
+const mentionedUsers = extractTaggedUserIds("Hello <@U123ABC>!");
 ```
 
-## Versioning
+Capture events inside your agent's Slack handlers. Use stable Slack message
+timestamps or turn IDs so your receiver can deduplicate repeated deliveries.
 
-- **v0.1.x** — `reportInboundEvent` only, matching the wire shape every agent already used before this package existed.
-- **v0.2.x** — adds `reportOutboundEvent`, `reportAudienceEvidence`, and `extractTaggedUserIds`, per [spec 2.53](https://app.notion.com/p/3cac36aa12c281fca34aec78b37ac7c1).
+## Configuration and delivery
+
+| Option      | Behavior                                                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseUrl`   | Required HTTP(S) collection URL, including any path prefix. No credentials, query, or fragment.                                                |
+| `token`     | Required string or synchronous provider. Providers run at each send, supporting token rotation. Empty/missing returned values disable sending. |
+| `timeoutMs` | Request timeout, default 5000 ms. Custom fetch implementations must honor the abort signal.                                                    |
+| `fetch`     | Optional fetch-compatible transport, useful for tests.                                                                                         |
+| `onError`   | Optional callback for HTTP errors, request failures, timeouts, token-provider failures, and invalid slugs.                                     |
+
+Invalid client configuration throws at construction. Reporting failures resolve
+without failing the agent turn. Errors are silent unless you supply `onError`;
+its metadata excludes credentials, event bodies, server responses, and raw errors.
+Errors from that callback are swallowed. Redirects are rejected.
+
+There is no automatic retry, queue, or delivery guarantee. Await sends, or pass
+their promises to your host's background-task mechanism. Using `void` alone may
+lose events when a serverless invocation ends. Empty audience batches are skipped.
+
+## Bring your own receiver
+
+Implement the [HTTP contract](docs/http-contract.md) in your service, using your
+own authentication, storage, and reporting UI. The client preserves payloads; the
+receiver validates them, authorizes the agent, and handles deduplication.
+
+A [local example](examples/README.md) demonstrates sending all three event types
+to a small Node.js receiver. It needs no company services and stores only
+temporary in-memory counts.
+
+## Existing installations
+
+Top-level `reportInboundEvent`, `reportOutboundEvent`, and
+`reportAudienceEvidence` preserve their v0.2 behavior. They are deprecated
+compatibility exports and still use the original Automators destination and
+`AUTOMATORS_MCP_TOKEN`. **New integrations should use the configured client.**
+
+See the [migration guide](docs/migration.md) for explicit configuration without
+changing existing event payloads or backend routes. Removing compatibility
+exports is reserved for a future major release, after existing consumers migrate.
+
+## Development
+
+```sh
+npm ci
+npm run typecheck
+npm test
+npm pack --dry-run
+```
+
+Tests cover the configurable transport, legacy wire compatibility, and the local
+receiver. CI runs on Node.js 20, 22, and 24.
+
+## Contributing and license
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Licensed under [MIT](LICENSE).

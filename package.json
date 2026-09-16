@@ -1,7 +1,7 @@
 {
   "name": "@bshaan77/eve-agent-reporting",
-  "version": "0.2.0",
-  "description": "Shared reporting client for Sendbird eve agents — standardized usage/audience event reporting to the Automators dashboard.",
+  "version": "0.3.0",
+  "description": "Configurable, dependency-free reporting client for Slack agent usage and audience events.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,18 +9,29 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "docs",
+    "examples",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "prepublishOnly": "npm run build",
-    "typecheck": "tsc --noEmit"
+    "prepublishOnly": "npm run typecheck && npm test",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "example:receiver": "node examples/receiver.mjs",
+    "example:send": "node examples/send.mjs"
   },
   "publishConfig": {
     "access": "public"
