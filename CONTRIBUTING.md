@@ -3,6 +3,14 @@
 Read [AGENTS.md](AGENTS.md) and [the public package policy](docs/public-package-policy.md)
 before making changes. These rules apply to both people and coding agents.
 
+Use [the spec → tickets → develop → release workflow](docs/workflow.md).
+The repository provides four harness-neutral `SKILL.md` entry points in
+`.agents/skills/`: `eve-spec`, `eve-tickets`, `eve-develop`, and `eve-release`.
+They do not grant access to a tracker, authorize publication, or install runtime
+subagents. Use the caller's configured tools and preserve existing authorization.
+
+For vulnerability reports, follow [SECURITY.md](SECURITY.md).
+
 ## Pull request checklist
 
 - [ ] The capability is useful to independent consumers without source edits.

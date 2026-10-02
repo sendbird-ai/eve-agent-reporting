@@ -33,6 +33,10 @@ descriptions.
 
 ## Change and release review
 
+- Use the [contributor workflow](docs/workflow.md) and repository skills in
+  `.agents/skills/` for spec, ticket, implementation, and release work. These are
+  contributor instructions; runtime subagent installation requires separate
+  installed-SDK discovery and packaging validation.
 - Follow [the public package policy](docs/public-package-policy.md) and
   [the contribution checklist](CONTRIBUTING.md).
 - Existing tenant-specific content is migration debt, not a precedent. The next
