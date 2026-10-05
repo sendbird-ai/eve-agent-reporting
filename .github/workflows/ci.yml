@@ -1,11 +1,23 @@
 name: CI
-
 on:
   pull_request:
+    branches: [main, docs/public-component-policy]
+  push:
     branches: [main]
-
 jobs:
-  build:
+  reporting:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci --workspaces=false
+      - run: npm run check
+  components:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,5 +25,10 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build
+      - run: npm run check:all
+      - run: npm run pack:candidates
+      - run: npm run smoke:installed
+      - uses: actions/upload-artifact@v4
+        with:
+          name: component-candidates
+          path: .artifacts/

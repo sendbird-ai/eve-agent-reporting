@@ -1,66 +1,55 @@
-# @bshaan77/eve-agent-reporting
+# Reusable agent components
 
-Shared reporting client for Sendbird [eve](https://vercel.com/docs/eve) agents. Standardizes how every eve agent — in the automators monorepo or an external repo — reports usage events to the Automators dashboard, instead of each agent hand-maintaining its own copy of this HTTP call.
+A configurable reporting client and optional developer, messaging, quality and fleet packages. Applications supply identity, destinations, credentials, repository scope, ticket routing and deployment policy. The public packages contain no organization defaults.
 
-This package covers the **reporting client only**: constructing and POSTing the event payload. It does not — and cannot — cover an agent's own event *capture* (reading `channel`/`ctx` from eve's runtime, diffing thread replies, etc.), since that needs each agent's own eve runtime objects and differs by dispatch shape. An agent's `channels/slack.ts` does its own capture, then calls this package's exports with the result.
+## Reporting
 
-## Install
-
-```bash
-npm install @bshaan77/eve-agent-reporting
-```
-
-## Usage
+The root package is independent of Eve and has no runtime dependencies. This branch prepares **1.0.0**; it has not been published. Existing installations remain on their installed version until explicitly upgraded.
 
 ```ts
-import { reportInboundEvent } from "@bshaan77/eve-agent-reporting";
+import { createReportingClient } from "@bshaan77/eve-agent-reporting";
 
-// Inside a message.completed handler, after a successful reply:
-void reportInboundEvent({
-  slug: "automators--wiki-eve", // this agent's registered EveAgent slug
-  slackUserId: triggeringUserId,
-  channelId,
-  sessionTurnKey: `${ctx.session.id}:${ctx.session.turn.id}`,
+const reporting = createReportingClient({
+  baseUrl: "https://reports.example.com/api/agents",
+  token: () => process.env.REPORTING_TOKEN,
+  onError: failure => console.warn("Reporting delivery failed", failure),
+});
+
+// Await completion or register it with the host's supported lifetime mechanism.
+await reporting.reportInboundEvent({
+  slug: "support-assistant",
+  slackUserId: "U123ABC",
+  channelId: "C123ABC",
+  sessionTurnKey: "session:turn-1",
   messageCount: 1,
 });
 ```
 
-Reads `AUTOMATORS_MCP_TOKEN` from `process.env` at call time — the same token every agent already uses for its Automators MCP connection. Never accepted as a parameter, so it can't be accidentally logged or passed through. Silently no-ops when the token is unset, and swallows request failures after logging one — a broken reporting call must never fail the turn it's reporting on.
+The client captures no runtime events itself. Call it after real inbound completions, outbound sends or audience observations. See the [HTTP contract](docs/http-contract.md) for bounded delivery, retry/idempotency rules and generic telemetry receiver requirements.
 
-## Usage — outbound + audience evidence (v0.2.0+)
+## Optional packages
 
-```ts
-import { reportOutboundEvent, reportAudienceEvidence, extractTaggedUserIds } from "@bshaan77/eve-agent-reporting";
+| Package | Provides | Application supplies |
+| --- | --- | --- |
+| `@bshaan77/eve-agent-developer` | Eve extension, subagent, scoped tools, sandbox workspace adapter, checks/review/draft flow | Trusted repository policy, sandbox environment, durable run/lease store, tracker, reviewer and draft publisher |
+| `@bshaan77/eve-agent-messaging` | Ordered progress, optional Slack rendering, send observation | Transport, real identifiers, business voice and durable delivery when required |
+| `@bshaan77/eve-agent-quality` | Check classification, red/green restoration flow, redacted content audit | Trusted test adapters, behavior evaluations and private audit identifiers |
+| `@bshaan77/eve-agent-fleet` | Versioned baselines and read-only adoption differences | Private inventory, resolved locks and deployment evidence |
 
-// After an outbound Slack post (reactive reply, scheduled digest, tool send, ...):
-void reportOutboundEvent({
-  slug: "automators--wiki-eve",
-  slackMessageTs: postedMessage.ts,
-  channelId,
-  isThreadReply: channelId === threadRootChannelId && postedMessage.ts !== postedMessage.threadTs,
-  sourceTool: "reactive-reply",
-});
+Optional packages are separately versioned 0.1.0 candidates. Reporting never imports them. The developer extension currently targets Eve **0.66.2** and Node **24**; older SDKs need separate migration and verification. Package existence does not establish production readiness.
 
-// Audience evidence — one or more rows per call (e.g. a whole group DM roster):
-void reportAudienceEvidence({
-  slug: "automators--wiki-eve",
-  entries: [
-    { slackUserId: triggeringUserId, evidenceKind: "TRIGGERED", channelId, sourceEventId: eventTs },
-  ],
-});
+See [architecture](docs/architecture.md), [migration](docs/migration.md), each package README and [release gates](docs/release-candidate.md).
 
-// Pure helper for channel broadcasts with no structured recipient:
-const taggedIds = extractTaggedUserIds(messageText); // e.g. ["U123ABC", "U456DEF"]
+## Develop
+
+```sh
+npm ci
+npm run check:all
+npm run pack:candidates
 ```
 
-## Versioning
+Use Node 24 for the workspace. Reporting alone supports Node 20 or later. Packed-artifact smoke checks use synthetic adapters, never production credentials or real ticket/PR writes.
 
-- **v0.1.x** — `reportInboundEvent` only, matching the wire shape every agent already used before this package existed.
-- **v0.2.x** — adds `reportOutboundEvent`, `reportAudienceEvidence`, and `extractTaggedUserIds`, per [spec 2.53](https://app.notion.com/p/3cac36aa12c281fca34aec78b37ac7c1).
+## Contribute
 
-## Contributing
-
-Start with [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and the
-[spec → tickets → develop → release workflow](docs/workflow.md). The repository
-provides contributor skills in `.agents/skills/`; these are separate from runtime
-subagent installation. See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and the [spec → tickets → develop → release workflow](docs/workflow.md). Contributor skills in `.agents/skills/` are separate from the runtime developer skill. Follow [SECURITY.md](SECURITY.md) for private vulnerability reports.

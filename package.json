@@ -1,7 +1,7 @@
 {
   "name": "@bshaan77/eve-agent-reporting",
-  "version": "0.2.0",
-  "description": "Shared reporting client for Sendbird eve agents — standardized usage/audience event reporting to the Automators dashboard.",
+  "version": "1.0.0",
+  "description": "Configurable reporting and optional reusable agent components",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,7 +20,17 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepublishOnly": "npm run build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "check": "npm run typecheck && npm test",
+    "build:components": "npm run build --workspaces",
+    "typecheck:components": "npm run typecheck --workspaces",
+    "test:components": "npm run test --workspaces",
+    "check:all": "npm run check && npm run typecheck:components && npm run test:components && npm run test:audit && npm run audit:public",
+    "pack:candidates": "node scripts/pack-candidates.mjs",
+    "audit:public": "npm run build --workspace @bshaan77/eve-agent-quality && node scripts/audit-public.mjs .",
+    "smoke:installed": "node scripts/smoke-installed.mjs",
+    "test:audit": "node --test scripts/test-audit.mjs"
   },
   "publishConfig": {
     "access": "public"
@@ -33,5 +43,8 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

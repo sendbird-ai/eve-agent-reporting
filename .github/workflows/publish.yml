@@ -1,10 +1,7 @@
 name: Publish
-
 on:
   push:
-    tags:
-      - "v*"
-
+    tags: ['v*', 'developer-v*', 'messaging-v*', 'quality-v*', 'fleet-v*']
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -13,9 +10,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: "https://registry.npmjs.org"
+          registry-url: https://registry.npmjs.org
       - run: npm ci
-      - run: npm run build
-      - run: npm publish --access public
+      - run: npm run check:all
+      - run: npm run pack:candidates
+      - run: npm run smoke:installed
+      - name: Publish exact tested artifact for matching package/version tag
+        run: node scripts/publish-candidate.mjs
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PUBLIC_AUDIT_CONFIG_JSON: ${{ secrets.PUBLIC_AUDIT_CONFIG_JSON }}
