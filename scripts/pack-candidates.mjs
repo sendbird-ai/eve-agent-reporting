@@ -50,9 +50,14 @@ for (const directory of packages) {
     await rm(unpacked, { recursive: true, force: true });
   }
 }
+const { stdout: revision } = await exec("git", ["rev-parse", "HEAD"]);
 await writeFile(
   join(destination, "manifest.json"),
-  JSON.stringify({ schemaVersion: 1, packages: records, published: false }, null, 2) + "\n"
+  JSON.stringify(
+    { schemaVersion: 1, sourceCommit: revision.trim(), packages: records, published: false },
+    null,
+    2
+  ) + "\n"
 );
 process.stdout.write(
   JSON.stringify({
