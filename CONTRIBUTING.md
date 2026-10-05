@@ -9,6 +9,22 @@ The repository provides four harness-neutral `SKILL.md` entry points in
 They do not grant access to a tracker, authorize publication, or install runtime
 subagents. Use the caller's configured tools and preserve existing authorization.
 
+## Issues, specs and reviews
+
+Use [GitHub Issues](https://github.com/sendbird-ai/eve-agent-reporting/issues)
+for package bugs, proposals and implementation status. Search existing issues and
+pull requests first. A small fix can use its issue as the spec; substantial API
+changes should link a public design in the issue or a reviewed `docs/` proposal.
+You do not need access to a private tracker, document service, deployment or customer
+account to contribute. Consumer adoption can be tracked privately by its owners.
+
+Open a branch from the current `main` unless intentionally stacking on an open PR;
+name that dependency and target its branch explicitly. Maintainers review merges
+and releases. A draft PR is neither an approved release nor a consumer deployment.
+
+Start with [the source and contract map](docs/source-map.md) for architecture,
+schema ownership, safe validation and reference-maintenance rules.
+
 For vulnerability reports, follow [SECURITY.md](SECURITY.md).
 
 ## Pull request checklist

@@ -6,9 +6,14 @@ The workflow is **spec → tickets → develop → release**. A small, clearly s
 fix can use its existing issue/PR as the spec; do not create four artifacts for a
 one-line change. An existing approved spec or ticket can start at its current stage.
 
-The host supplies repository/base branch, spec destination, issue tracker/project,
-reviewers, supported runtime versions and release method. Obtain these from trusted
-project configuration or explicit user instructions. Never put tenant routing or
+For this package, GitHub Issues is the authoritative public implementation tracker.
+Keep public designs in an issue or repository documentation, and link the owning
+issue from each PR. No private tracker or document service is required. Consumer
+adoption has its own private tracking and must not duplicate upstream status.
+
+The host supplies repository/base branch, reviewers, supported runtime versions
+and release method. Obtain these from trusted project configuration or explicit
+user instructions. Never put tenant routing or
 connection identifiers into public skills or examples. If a destination is absent,
 prepare a local reviewable draft rather than guessing where to publish it.
 
@@ -43,7 +48,8 @@ completed historic work as if it were a new blocker.
 Create real tracker dependency relations after identifiers are known. Keep dates,
 estimates, cycles and assignees unset unless supplied or agreed. Work with unresolved
 contracts remains in backlog and names the decision that unlocks implementation.
-Choose one issue tracker as the status authority; specs link to it.
+Use GitHub issue dependencies or explicit dependency links; specs link to the
+authoritative issues. A private tracker relation is not a prerequisite.
 
 ## Develop
 
