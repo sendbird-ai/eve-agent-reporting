@@ -28,11 +28,12 @@ for (const directory of packages) {
   try {
     await exec("tar", ["-xzf", path, "-C", unpacked]);
     const config = process.env.PUBLIC_AUDIT_CONFIG;
-    await exec(
+    const { stdout: auditOutput } = await exec(
       process.execPath,
       [
         "scripts/audit-public.mjs",
         join(unpacked, "package"),
+        "--artifact",
         ...(config ? ["--config=" + config] : []),
       ],
       { cwd: process.cwd() }
@@ -43,6 +44,7 @@ for (const directory of packages) {
       filename: metadata.filename,
       sha256: createHash("sha256").update(bytes).digest("hex"),
       integrity: metadata.integrity,
+      audit: { ...JSON.parse(auditOutput), includesGeneratedFiles: true },
     });
   } finally {
     await rm(unpacked, { recursive: true, force: true });

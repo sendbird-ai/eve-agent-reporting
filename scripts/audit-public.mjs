@@ -3,6 +3,7 @@ import { join, relative } from "node:path";
 import { auditText } from "../packages/quality/dist/index.js";
 const args = process.argv.slice(2);
 const configPath = args.find((arg) => arg.startsWith("--config="))?.slice(9);
+const artifact = args.includes("--artifact");
 const roots = args.filter((arg) => !arg.startsWith("--"));
 if (!roots.length) throw new Error("Provide source or unpacked artifact directories");
 let config;
@@ -24,7 +25,9 @@ for (const entry of config.metadataAllowlist)
     typeof entry.value !== "string"
   )
     throw new Error("Only exact reviewed package provenance fields may be exempted");
-const excluded = new Set(["node_modules", ".git", "dist", ".eve", ".output", ".artifacts"]);
+const excluded = new Set(
+  artifact ? [] : ["node_modules", ".git", "dist", ".eve", ".output", ".artifacts"]
+);
 let scanned = 0,
   findings = 0;
 async function walk(root, path = root) {

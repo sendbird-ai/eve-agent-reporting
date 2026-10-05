@@ -25,10 +25,11 @@ try {
   if (createHash("sha256").update(bytes).digest("hex") !== item.sha256)
     throw Error("Candidate checksum changed");
   await exec("tar", ["-xzf", tarball, "-C", temporary]);
+  await exec(process.execPath, ["scripts/audit-public.mjs", ".", "--config=" + config]);
   await exec(process.execPath, [
     "scripts/audit-public.mjs",
-    ".",
     join(temporary, "package"),
+    "--artifact",
     "--config=" + config,
   ]);
   await exec("npm", ["publish", tarball, "--access", "public"]);
