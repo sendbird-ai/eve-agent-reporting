@@ -57,3 +57,10 @@ const taggedIds = extractTaggedUserIds(messageText); // e.g. ["U123ABC", "U456DE
 
 - **v0.1.x** — `reportInboundEvent` only, matching the wire shape every agent already used before this package existed.
 - **v0.2.x** — adds `reportOutboundEvent`, `reportAudienceEvidence`, and `extractTaggedUserIds`, per [spec 2.53](https://app.notion.com/p/3cac36aa12c281fca34aec78b37ac7c1).
+
+## Contributing
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md), and the
+[spec → tickets → develop → release workflow](docs/workflow.md). The repository
+provides contributor skills in `.agents/skills/`; these are separate from runtime
+subagent installation. See [SECURITY.md](SECURITY.md) for vulnerability reporting.
