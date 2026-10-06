@@ -31,6 +31,16 @@ descriptions.
 - Inspect documentation for the installed SDK version before changing its APIs.
   Verify packaging and prompt discovery using actual installed artifacts.
 
+## Finding contracts and instructions
+
+- Read [the source map](docs/source-map.md) before changing contracts or validation.
+  Source declarations and behavior are authoritative; reference docs explain them.
+- Public package work uses GitHub Issues. Private services are not prerequisites.
+- Read applicable nested `AGENTS.md` files when present. This instruction does not
+  certify that any installed runtime discovers them automatically.
+- Keep contract references current in the same PR. Do not introduce a handwritten
+  duplicate schema or claim generated docs exist without a reproducible generator.
+
 ## Change and release review
 
 - Use the [contributor workflow](docs/workflow.md) and repository skills in

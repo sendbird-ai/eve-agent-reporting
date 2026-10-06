@@ -1,15 +1,17 @@
 ---
 name: eve-tickets
-description: Turn an agent-component spec into dependency-linked implementation or adoption tickets in the caller's configured tracker.
+description: Turn an agent-component spec into dependency-linked implementation or adoption tickets in this package's GitHub Issues tracker.
 ---
 
 Read the repository's `AGENTS.md` and the Tickets section of
 [the contributor workflow](../../../docs/workflow.md).
 
-Start from the requested spec. Search the configured tracker for existing work and
-reuse or link it before creating issues. Keep historic completed work as evidence,
-not a new prerequisite. Do not invent a tracker/project when configuration is absent;
-write local ticket drafts and identify the missing routing instead.
+Start from the requested spec. Use this repository's GitHub Issues for public
+package implementation; search and reuse existing issues first. No private tracker
+or document-service access is required. Keep historic completed work as evidence,
+not a new prerequisite. If GitHub write access is unavailable, prepare local issue
+drafts rather than requesting unrelated service access. Private consumer adoption
+belongs in the consumer's tracker and must not expose private context here.
 
 Each slice needs affected paths, approach, acceptance/verification, compatibility
 impact, dependencies and the spec link. Separate capability development, consumer
