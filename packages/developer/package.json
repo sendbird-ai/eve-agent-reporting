@@ -1,0 +1,61 @@
+{
+  "name": "@bshaan77/eve-agent-developer",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Reusable developer components for agent applications",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.mjs"
+    },
+    "./core": {
+      "types": "./dist/extension/lib/core.d.ts",
+      "import": "./dist/extension/lib/core.mjs"
+    },
+    "./tools": {
+      "types": "./dist/tools/index.d.ts",
+      "default": "./dist/tools/index.mjs"
+    },
+    "./sandbox": {
+      "types": "./dist/extension/lib/sandbox-workspace.d.ts",
+      "import": "./dist/extension/lib/sandbox-workspace.mjs"
+    },
+    "./github": {
+      "types": "./dist/extension/lib/github-host.d.ts",
+      "import": "./dist/extension/lib/github-host.mjs"
+    }
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "eve extension build",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "eve": {
+    "extension": {
+      "source": "./extension",
+      "dist": "./dist/extension"
+    }
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "eve": "0.66.2"
+  },
+  "peerDependencies": {
+    "eve": "0.66.2"
+  }
+}
