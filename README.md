@@ -37,7 +37,7 @@ The client captures no runtime events itself. Call it after real inbound complet
 | `@bshaan77/eve-agent-quality` | Check classification, red/green restoration flow, redacted content audit | Trusted test adapters, behavior evaluations and private audit identifiers |
 | `@bshaan77/eve-agent-fleet` | Versioned baselines and read-only adoption differences | Private inventory, resolved locks and deployment evidence |
 
-Optional packages are separately versioned 0.1.0 candidates. Reporting never imports them. The developer extension currently targets Eve **0.66.2** and Node **24**; older SDKs need separate migration and verification. Package existence does not establish production readiness.
+Slack **0.1.0-rc.1** is a published pilot prerelease. The other optional packages remain unpublished 0.1.0 candidates; stable Slack 0.1.0 has not been released. Consumer adoption requires separate owner review and validation. Reporting never imports them. The developer extension currently targets Eve **0.66.2** and Node **24**; older SDKs need separate migration and verification. Package existence does not establish production readiness.
 
 See the [Slack component design](docs/slack-experience.md) and [architecture](docs/architecture.md), [migration](docs/migration.md), each package README and [release gates](docs/release-candidate.md).
 

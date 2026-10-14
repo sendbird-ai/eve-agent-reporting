@@ -1,5 +1,13 @@
 # Changelog
 
+## Slack 0.1.0-rc.1 (published prerelease)
+
+- Publish the optional Slack component from source `812bcb42f007b8af07bdfcdc6ee30b3e540171d4`, tagged `slack-v0.1.0-rc.1`.
+- Preserve specialist task input and source boundaries in the pilot candidate.
+- Stable Slack 0.1.0, reporting 1.0.0 and the other optional modules remain unreleased. Consumer adoption and live validation are separate from publication.
+
+See the [release record](docs/release-candidate.md#slack-component-prerelease) for artifact verification.
+
 ## Unreleased candidates
 
 ### Reporting 1.0.0
