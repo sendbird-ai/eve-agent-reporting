@@ -1,6 +1,6 @@
 {
   "name": "@bshaan77/eve-agent-slack",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.1",
   "description": "Configurable Slack audience, thread context and reply rendering for agents",
   "type": "module",
   "license": "MIT",

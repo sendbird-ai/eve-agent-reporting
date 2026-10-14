@@ -35,7 +35,7 @@ and auth to those contracts without adding a dependency on Eve to the package.
 
 ## Release and adoption
 
-This additive module begins at candidate 0.1.0. Existing package APIs and installations
+This additive module begins at pilot prerelease 0.1.0-rc.1. Existing package APIs and installations
 are unchanged. Release only after the baseline and this PR pass review, artifact
 inspection and declared checks. Consumers pin exact approved versions, regenerate
 and hash-check their prompt files, connect their existing read credentials, and

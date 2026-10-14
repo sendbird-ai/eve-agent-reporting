@@ -1,6 +1,6 @@
 # Shared Slack behavior
 
-`@bshaan77/eve-agent-slack` is an optional, independently versioned **0.1.0 candidate**.
+`@bshaan77/eve-agent-slack` is an optional, independently versioned **0.1.0-rc.1 pilot prerelease**.
 It has no runtime dependencies, credentials, SDK imports or posting tools. Install it
 without the reporting or developer packages. Node 20 or later is required.
 
@@ -74,8 +74,7 @@ at the router. Prompt guidance alone does not guarantee model behavior.
 
 Before rollout, pin the exact released version, verify actual Slack scopes, run the
 private consumer's behavior evaluations and rendered Slack tests, then canary one
-consumer. Keep the previous lockfile and adapter for rollback. This candidate is
-not published and is not evidence of a working production consumer.
+consumer. Keep the previous lockfile and adapter for rollback. This prerelease is not evidence of a working production consumer.
 
 ## Deliberate limits
 

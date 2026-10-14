@@ -32,7 +32,7 @@ try {
     "--artifact",
     "--config=" + config,
   ]);
-  await exec("npm", ["publish", tarball, "--access", "public"]);
+  await exec("npm", ["publish", tarball, "--access", "public", "--tag", match[2].includes("-") ? "next" : "latest"]);
   process.stdout.write(
     JSON.stringify({ name, version: item.version, sha256: item.sha256, published: true }) + "\n"
   );
