@@ -30,7 +30,8 @@
     "pack:candidates": "node scripts/pack-candidates.mjs",
     "audit:public": "npm run build --workspace @bshaan77/eve-agent-quality && node scripts/audit-public.mjs .",
     "smoke:installed": "node scripts/smoke-installed.mjs",
-    "test:audit": "node --test scripts/test-audit.mjs"
+    "test:audit": "node --test scripts/test-audit.mjs",
+    "smoke:slack": "node scripts/smoke-slack.mjs"
   },
   "publishConfig": {
     "access": "public"

@@ -11,6 +11,7 @@ const packages = [
   ".",
   "packages/developer",
   "packages/messaging",
+  "packages/slack",
   "packages/quality",
   "packages/fleet",
 ];

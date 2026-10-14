@@ -1,6 +1,6 @@
 # Reusable agent components
 
-A configurable reporting client and optional developer, messaging, quality and fleet packages. Applications supply identity, destinations, credentials, repository scope, ticket routing and deployment policy. The public packages contain no organization defaults.
+A configurable reporting client and optional developer, messaging, Slack, quality and fleet packages. Applications supply identity, destinations, credentials, repository scope, ticket routing and deployment policy. The public packages contain no organization defaults.
 
 ## Reporting
 
@@ -33,12 +33,13 @@ The client captures no runtime events itself. Call it after real inbound complet
 | --- | --- | --- |
 | `@bshaan77/eve-agent-developer` | Eve extension, subagent, scoped tools, sandbox workspace adapter, checks/review/draft flow | Trusted repository policy, sandbox environment, durable run/lease store, tracker, reviewer and draft publisher |
 | `@bshaan77/eve-agent-messaging` | Ordered progress, optional Slack rendering, send observation | Transport, real identifiers, business voice and durable delivery when required |
+| `@bshaan77/eve-agent-slack` | Audience/person lookup, bounded thread briefs, cited replies and packaged guidance | Read transport, role policy, permissions, agent wiring and behavior evaluations |
 | `@bshaan77/eve-agent-quality` | Check classification, red/green restoration flow, redacted content audit | Trusted test adapters, behavior evaluations and private audit identifiers |
 | `@bshaan77/eve-agent-fleet` | Versioned baselines and read-only adoption differences | Private inventory, resolved locks and deployment evidence |
 
 Optional packages are separately versioned 0.1.0 candidates. Reporting never imports them. The developer extension currently targets Eve **0.66.2** and Node **24**; older SDKs need separate migration and verification. Package existence does not establish production readiness.
 
-See [architecture](docs/architecture.md), [migration](docs/migration.md), each package README and [release gates](docs/release-candidate.md).
+See the [Slack component design](docs/slack-experience.md) and [architecture](docs/architecture.md), [migration](docs/migration.md), each package README and [release gates](docs/release-candidate.md).
 
 ## Develop
 

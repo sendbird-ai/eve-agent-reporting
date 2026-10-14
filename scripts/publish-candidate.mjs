@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 const exec = promisify(execFile);
 const tag = process.env.GITHUB_REF_NAME;
 const match = tag?.match(
-  /^(?:(developer|messaging|quality|fleet)-)?v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/
+  /^(?:(developer|messaging|slack|quality|fleet)-)?v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/
 );
 if (!match) throw Error("Release requires an exact package/version tag");
 if (!process.env.PUBLIC_AUDIT_CONFIG_JSON)
