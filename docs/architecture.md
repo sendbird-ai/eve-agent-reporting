@@ -11,3 +11,9 @@ The shared engine does not expose arbitrary shell, merge, deployment or a genera
 Durable run storage, per-repository leases, fencing and idempotent ticket/PR publication are mandatory host contracts. No in-memory production fallback is supplied. Cold-start and concurrent-instance tests use a shared synthetic store; a production adapter requires its own distributed-storage and stale-fence tests. A PR quota is not a lock.
 
 Messaging utilities compose with the caller's existing dispatch. Local ordering/deduplication is bounded and loses state on restart; durable messaging guarantees require host storage and receiver idempotency. Fleet comparison is read-only and distinguishes source, installed and deployed evidence.
+
+The optional Slack package supplies read-only audience/person resolution, bounded
+thread context, a specialist brief contract, conservative formatting and cited-answer
+rendering. It imports neither reporting nor Eve. Host adapters preserve authentication,
+posting permissions and existing dispatch rules. Public/mixed/unknown audiences default
+to plain presentation; this never grants data access. See [the design](slack-experience.md).

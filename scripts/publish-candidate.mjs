@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 const exec = promisify(execFile);
 const tag = process.env.GITHUB_REF_NAME;
 const match = tag?.match(
-  /^(?:(developer|messaging|quality|fleet)-)?v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/
+  /^(?:(developer|messaging|slack|quality|fleet)-)?v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/
 );
 if (!match) throw Error("Release requires an exact package/version tag");
 if (!process.env.PUBLIC_AUDIT_CONFIG_JSON)
@@ -32,7 +32,7 @@ try {
     "--artifact",
     "--config=" + config,
   ]);
-  await exec("npm", ["publish", tarball, "--access", "public"]);
+  await exec("npm", ["publish", tarball, "--access", "public", "--tag", match[2].includes("-") ? "next" : "latest"]);
   process.stdout.write(
     JSON.stringify({ name, version: item.version, sha256: item.sha256, published: true }) + "\n"
   );

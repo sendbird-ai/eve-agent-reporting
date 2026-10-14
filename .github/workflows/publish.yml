@@ -1,7 +1,7 @@
 name: Publish
 on:
   push:
-    tags: ['v*', 'developer-v*', 'messaging-v*', 'quality-v*', 'fleet-v*']
+    tags: ['v*', 'developer-v*', 'messaging-v*', 'slack-v*', 'quality-v*', 'fleet-v*']
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -15,6 +15,7 @@ jobs:
       - run: npm run check:all
       - run: npm run pack:candidates
       - run: npm run smoke:installed
+      - run: npm run smoke:slack
       - name: Publish exact tested artifact for matching package/version tag
         run: node scripts/publish-candidate.mjs
         env:

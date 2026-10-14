@@ -1,0 +1,32 @@
+{
+  "name": "@bshaan77/eve-agent-slack",
+  "version": "0.1.0-rc.1",
+  "description": "Configurable Slack audience, thread context and reply rendering for agents",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "prompts",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./prompts/slack.md": "./prompts/slack.md"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
