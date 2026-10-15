@@ -22,7 +22,8 @@ build and 17 focused tests passed. Tests exercise actual local git/filesystem
 workflow and synthetic publication, denied paths/renames/symlinks, stale review,
 lease fencing, credential revocation and independent reviewer requirements.
 `npm run pack:candidates` inspected six packed artifacts with zero configured
-baseline findings; private denylist was not supplied and manual review remains
+baseline findings. A separate private configured denylist audit of all 42
+developer artifact files also returned zero findings; manual review remains
 required. `npm run smoke:installed` compiled two independent installed developer
 consumer configurations. Sandbox prewarm was skipped; no live provider, tracker,
 GitHub credential or publication exercise occurred.
