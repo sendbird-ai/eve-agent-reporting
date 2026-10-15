@@ -18,7 +18,7 @@ may be substituted for production services.
 ## Executed validation
 
 Node 24.21.0: `npm ci --ignore-scripts`, `npm run check:all`, developer component
-build and 17 focused tests passed. Tests exercise actual local git/filesystem
+build and 21 focused tests passed. Tests exercise actual local git/filesystem
 workflow and synthetic publication, denied paths/renames/symlinks, stale review,
 lease fencing, credential revocation and independent reviewer requirements.
 `npm run pack:candidates` inspected six packed artifacts with zero configured
@@ -26,7 +26,10 @@ baseline findings. A separate private configured denylist audit of all 42
 developer artifact files also returned zero findings; manual review remains
 required. `npm run smoke:installed` compiled two independent installed developer
 consumer configurations. Sandbox prewarm was skipped; no live provider, tracker,
-GitHub credential or publication exercise occurred.
+GitHub credential or external publication exercise occurred. A local Git push
+verified that annotated tags and repository configuration cannot broaden the
+reviewed branch publication. Context scope/size/symlink/nested-rule regressions
+cover initialization as well as ordinary reads.
 
 The developer tarball contains neutral configuration examples and no consumer
 repository policy or connection configuration. Source and generated content still

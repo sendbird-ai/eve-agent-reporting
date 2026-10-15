@@ -37,7 +37,6 @@ test("shared GitHub plumbing executes local clone/edit/check/commit and recovers
       removePath: async ({ path }) => rm(physical(path), { recursive: true, force: true }),
       run: async ({ command, workingDirectory }) => {
         commands.push(command);
-        if (command.includes("push --")) return { exitCode: 0, stdout: "", stderr: "" };
         const local = physical(command).replace(
           "https://github.com/example-org/example-repo.git",
           "file://" + origin
@@ -169,18 +168,38 @@ test("shared GitHub plumbing executes local clone/edit/check/commit and recovers
     });
     await engine.ticket("run-1", { title: "Scoped edit", description: "Synthetic acceptance" });
     await engine.edit("run-1", { path: "src/main.txt", oldText: "old", newText: "new" });
+    // Repository configuration and tags are outside the reviewed file diff.
+    // Prove they cannot add an unreviewed ref to the explicit branch push.
+    await execFile("/usr/bin/git", ["config", "push.followTags", "true"], { cwd: physical(record.root) });
+    await execFile("/usr/bin/git", ["-c", "user.name=Example", "-c", "user.email=example@example.com", "tag", "-a", "unreviewed-tag", "-m", "unreviewed"], { cwd: physical(record.root) });
     await engine.checks("run-1");
     await engine.review("run-1");
+    for (const [key, value] of [
+      ["url.https://outside.example/.insteadOf", "https://github.com/"],
+      ["push.pushOption", "unreviewed-option"],
+      ["remote.origin.mirror", "true"],
+      ["remote.origin.pushurl", "https://outside.example/repository"],
+      ["remote.origin.push", "refs/tags/*:refs/tags/*"],
+      ["http.extraHeader", "Authorization: synthetic-secret"],
+    ]) {
+      await execFile("/usr/bin/git", ["config", key, value], { cwd: physical(record.root) });
+      await assert.rejects(engine.publish("run-1"), /Unsafe repository publication configuration/);
+      await execFile("/usr/bin/git", ["config", "--unset-all", key], { cwd: physical(record.root) });
+    }
     await assert.rejects(engine.publish("run-1"), /lost write/);
     const recovered = createDeveloper(policy, makeHost());
     assert.deepEqual(await recovered.publish("run-1"), { url: "https://example.com/draft/1" });
     assert.equal(creates, 1);
-    assert.equal(commands.filter((c) => c.includes("push --")).length, 1);
+    assert.equal(commands.filter((c) => c.includes("push --no-follow-tags --")).length, 1);
     assert.ok(
       commands
-        .find((c) => c.includes("push --"))
+        .find((c) => c.includes("push --no-follow-tags --"))
         .includes(record.preparedHead + ":refs/heads/assistant/task-1")
     );
+    const remoteTags = await execFile("/usr/bin/git", ["tag", "--list"], { cwd: origin });
+    assert.equal(remoteTags.stdout.trim(), "");
+    const remoteBranch = await execFile("/usr/bin/git", ["rev-parse", "refs/heads/assistant/task-1"], { cwd: origin });
+    assert.equal(remoteBranch.stdout.trim(), record.preparedHead);
     assert.equal(network.at(-1), "deny-all");
   } finally {
     await rm(temp, { recursive: true, force: true });

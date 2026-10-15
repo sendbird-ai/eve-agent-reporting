@@ -71,7 +71,7 @@ export function createGitHubHost(options: GitHubHostOptions): DeveloperHost {
   >();
   async function git(sandbox: VercelSandboxSession, args: string, root?: string) {
     const result = await sandbox.run({
-      command: `${quote(gitExecutable)} -c core.hooksPath=/dev/null -c core.fsmonitor=false -c commit.gpgsign=false -c credential.helper= ${args}`,
+      command: `GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null ${quote(gitExecutable)} -c core.hooksPath=/dev/null -c core.fsmonitor=false -c commit.gpgsign=false -c credential.helper= ${args}`,
       ...(root ? { workingDirectory: root } : {}),
     });
     if (result.exitCode !== 0) throw new Error("Git operation failed");
@@ -209,12 +209,20 @@ export function createGitHubHost(options: GitHubHostOptions): DeveloperHost {
       };
       const existing = await services.drafts.find(target);
       if (existing) return existing;
+      // Checks run repository code. Reject config that can redirect an explicit HTTPS
+      // URL or attach hidden credentials/options/refs despite the reviewed refspec.
+      const config = await sandbox.run({
+        command: `GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null ${quote(gitExecutable)} config --get-regexp ${quote("^(url\\.|http\\.|credential\\.|core\\.sshcommand$|push\\.pushoption$|remote\\..*\\.(pushurl|mirror|push)$)")}`,
+        workingDirectory: record.root,
+      });
+      if (config.exitCode !== 1 || config.stdout.trim())
+        throw new Error("Unsafe repository publication configuration");
       await network(sandbox, input.repository, "push", async () => {
         await services.store.assertFence(input.repository, input.runId, input.fence);
         // Explicit URL/ref, never a repository-supplied pushurl; never force or merge.
         await git(
           sandbox,
-          `push -- https://github.com/${input.repository}.git ${quote(record.preparedHead! + ":refs/heads/" + input.branch)}`,
+          `push --no-follow-tags -- https://github.com/${input.repository}.git ${quote(record.preparedHead! + ":refs/heads/" + input.branch)}`,
           record.root
         );
       });

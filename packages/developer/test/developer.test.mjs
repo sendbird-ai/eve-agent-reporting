@@ -274,3 +274,61 @@ test("two differently configured consumers use unchanged shared source and route
     await e.publish("run-1");
   }
 });
+
+
+test("initialization cannot read denied instructions or disclose protected skill metadata", async () => {
+  const f = fixture();
+  f.files.set("AGENTS.md", "SYNTHETIC PROTECTED INSTRUCTIONS");
+  f.files.set(".agents/skills/private/SKILL.md", "description: SYNTHETIC PROTECTED DESCRIPTION");
+  const limited = policy();
+  limited.repositories[0].readablePaths = ["src"];
+  limited.repositories[0].writablePaths = [];
+  limited.repositories[0].protectedPaths = ["AGENTS.md", ".agents"];
+  limited.maxFileBytes = 4;
+  const engine = createDeveloper(limited, f.host);
+  await assert.rejects(engine.initialize("denied-context", { repository: "example-org/example-repo", branch: "assistant/context", mode: "research" }), /Path exceeds policy/);
+  assert.equal(f.runs.has("denied-context"), false);
+});
+
+test("context loads applicable root and nested rules with per-directory fallback and bounded approved skills", async () => {
+  const f = fixture();
+  f.files.set("AGENTS.md", "root rules");
+  f.files.set("CLAUDE.md", "ignored duplicate");
+  f.files.set("src/AGENTS.md", "source rules");
+  f.files.set("src/nested/CLAUDE.md", "nested fallback");
+  f.files.set("other/AGENTS.md", "unrelated rules");
+  f.files.set(".agents/skills/public/SKILL.md", "description: Approved skill");
+  f.files.set(".agents/skills/private/SKILL.md", "description: Protected skill");
+  const scoped = policy();
+  scoped.repositories[0].readablePaths = ["src", "AGENTS.md", "CLAUDE.md", ".agents/skills/public"];
+  scoped.repositories[0].writablePaths = ["src"];
+  const engine = createDeveloper(scoped, f.host);
+  const context = await engine.initialize("scoped-context", { repository: "example-org/example-repo", branch: "assistant/context", mode: "develop" });
+  assert.match(context.instructions, /root rules[\s\S]*source rules[\s\S]*nested fallback/);
+  assert.doesNotMatch(JSON.stringify(context), /ignored duplicate|unrelated rules|Protected skill|private/);
+  assert.deepEqual(context.skills, [{ path: ".agents/skills/public/SKILL.md", description: "Approved skill" }]);
+});
+
+test("context rejects oversized rule bodies and excessive approved metadata counts", async () => {
+  for (const many of [false, true]) {
+    const f = fixture();
+    if (many) for (let n = 0; n < 129; n++) f.files.set(`.agents/skills/item-${n}/SKILL.md`, "description: x");
+    else f.files.set("AGENTS.md", "x".repeat(10001));
+    const engine = createDeveloper(policy(), f.host);
+    await assert.rejects(engine.initialize("bounded-context", { repository: "example-org/example-repo", branch: "assistant/context", mode: "research" }), /context exceeds configured limit/);
+  }
+});
+
+
+test("initialization rejects instruction symlinks before reading their contents", async () => {
+  const f = fixture();
+  f.files.set("src/AGENTS.md", "SYNTHETIC OUTSIDE RULES");
+  const workspace = await f.host.workspace();
+  workspace.canonicalPath = async (path) => path === "src/AGENTS.md" ? "outside/AGENTS.md" : path;
+  const reads = [];
+  const read = workspace.read;
+  workspace.read = async (path) => { reads.push(path); return read(path); };
+  const engine = createDeveloper(policy(), f.host);
+  await assert.rejects(engine.initialize("linked-context", { repository: "example-org/example-repo", branch: "assistant/context", mode: "research" }), /Path exceeds policy/);
+  assert.equal(reads.includes("src/AGENTS.md"), false);
+});
