@@ -78,9 +78,12 @@ is capped at 128 files and the configured `maxFileBytes` aggregate input/output
 budget. `Workspace.context` was removed from this unreleased candidate to prevent
 host metadata from bypassing these gates.
 
-Publication ignores global/system Git configuration, rejects local URL rewriting,
-HTTP/credential overrides, push options and remote mirror/refspec/push-URL settings,
-and explicitly disables following tags. These checks complement the reviewed
+Publication ignores global/system Git configuration and replace refs, allows only
+normal clone/branch local configuration, rejects hidden attributes/grafts/object
+alternates, and explicitly disables following tags. Raw prepared-commit blob hashes,
+file modes, deletions and the exact changed-path set must match the reviewed
+canonical worktree bytes. Attribute normalization that changes committed bytes
+therefore blocks publication, even when ordinary Git diff reports equality. These checks complement the reviewed
 commit fingerprint, exact branch refspec, disabled hooks and lease fence. Provider
 isolation must stop/reap repository check processes before publication; local file
 inspection alone cannot prevent a concurrently running malicious process.
