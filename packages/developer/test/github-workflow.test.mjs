@@ -8,7 +8,8 @@ import { promisify } from "node:util";
 import { createDeveloper } from "../dist/extension/lib/core.mjs";
 import { createGitHubHost } from "../dist/extension/lib/github-host.mjs";
 const execFile = promisify(exec);
-test("shared GitHub plumbing executes local clone/edit/check/commit and recovers an idempotent draft after lost acknowledgement", async () => {
+for (const normalization of [false, true]) {
+test(normalization ? "prepared commit raw bytes cannot differ through Git attribute normalization" : "shared GitHub plumbing executes local clone/edit/check/commit and recovers an idempotent draft after lost acknowledgement", async () => {
   const temp = await realpath(await mkdtemp(join(tmpdir(), "github-workflow-")));
   const origin = join(temp, "origin"),
     workspaces = join(temp, "workspaces");
@@ -17,6 +18,7 @@ test("shared GitHub plumbing executes local clone/edit/check/commit and recovers
   try {
     await mkdir(join(origin, "src"), { recursive: true });
     await writeFile(join(origin, "src/main.txt"), "old");
+    if (normalization) await writeFile(join(origin, ".gitattributes"), "src/main.txt text eol=lf\n");
     for (const args of [
       ["init", "-b", "main"],
       ["add", "."],
@@ -37,7 +39,6 @@ test("shared GitHub plumbing executes local clone/edit/check/commit and recovers
       removePath: async ({ path }) => rm(physical(path), { recursive: true, force: true }),
       run: async ({ command, workingDirectory }) => {
         commands.push(command);
-        if (command.includes("push --")) return { exitCode: 0, stdout: "", stderr: "" };
         const local = physical(command).replace(
           "https://github.com/example-org/example-repo.git",
           "file://" + origin
@@ -129,7 +130,7 @@ test("shared GitHub plumbing executes local clone/edit/check/commit and recovers
         commitIdentity: { name: "Example contributor", email: "contributor@example.com" },
         checks: () => ({
           test: {
-            command: `${process.execPath} -e 'require("node:assert/strict").equal(require("node:fs").readFileSync("src/main.txt","utf8"),"new")'`,
+            command: `${process.execPath} -e 'require("node:assert/strict").equal(require("node:fs").readFileSync("src/main.txt","utf8").trim(),"new")'`,
             parse: (r) => ({
               exitCode: r.exitCode,
               assertionsPassed: r.exitCode === 0 ? 1 : 0,
@@ -168,21 +169,55 @@ test("shared GitHub plumbing executes local clone/edit/check/commit and recovers
       mode: "develop",
     });
     await engine.ticket("run-1", { title: "Scoped edit", description: "Synthetic acceptance" });
-    await engine.edit("run-1", { path: "src/main.txt", oldText: "old", newText: "new" });
+    await engine.edit("run-1", { path: "src/main.txt", oldText: "old", newText: normalization ? "new\r\n" : "new" });
+    // Repository configuration and tags are outside the reviewed file diff.
+    // Prove they cannot add an unreviewed ref to the explicit branch push.
+    await execFile("/usr/bin/git", ["config", "push.followTags", "true"], { cwd: physical(record.root) });
+    await execFile("/usr/bin/git", ["-c", "user.name=Example", "-c", "user.email=example@example.com", "tag", "-a", "unreviewed-tag", "-m", "unreviewed"], { cwd: physical(record.root) });
     await engine.checks("run-1");
     await engine.review("run-1");
+    if (normalization) {
+      await assert.rejects(engine.publish("run-1"), /Prepared commit bytes differ/);
+      assert.equal(commands.some((command) => command.includes("push --no-follow-tags")), false);
+      assert.equal(creates, 0);
+      return;
+    }
+    await writeFile(join(physical(record.root), ".git/info/attributes"), "src/main.txt filter=synthetic\n");
+    await assert.rejects(engine.publish("run-1"), /Unsafe repository publication metadata/);
+    await writeFile(join(physical(record.root), ".git/info/attributes"), "");
+    for (const [key, value] of [
+      ["url.https://outside.example/.insteadOf", "https://github.com/"],
+      ["push.pushOption", "unreviewed-option"],
+      ["filter.synthetic.clean", "printf unreviewed"],
+      ["core.attributesFile", "/tmp/unreviewed-attributes"],
+      ["include.path", "/tmp/unreviewed-config"],
+      ["remote.origin.mirror", "true"],
+      ["remote.origin.pushurl", "https://outside.example/repository"],
+      ["remote.origin.push", "refs/tags/*:refs/tags/*"],
+      ["http.extraHeader", "Authorization: synthetic-secret"],
+    ]) {
+      await execFile("/usr/bin/git", ["config", key, value], { cwd: physical(record.root) });
+      await assert.rejects(engine.publish("run-1"), /Unsafe repository publication configuration/);
+      await execFile("/usr/bin/git", ["config", "--unset-all", key], { cwd: physical(record.root) });
+    }
     await assert.rejects(engine.publish("run-1"), /lost write/);
     const recovered = createDeveloper(policy, makeHost());
     assert.deepEqual(await recovered.publish("run-1"), { url: "https://example.com/draft/1" });
     assert.equal(creates, 1);
-    assert.equal(commands.filter((c) => c.includes("push --")).length, 1);
+    assert.equal(commands.filter((c) => c.includes("push --no-follow-tags --")).length, 1);
     assert.ok(
       commands
-        .find((c) => c.includes("push --"))
+        .find((c) => c.includes("push --no-follow-tags --"))
         .includes(record.preparedHead + ":refs/heads/assistant/task-1")
     );
+    const remoteTags = await execFile("/usr/bin/git", ["tag", "--list"], { cwd: origin });
+    assert.equal(remoteTags.stdout.trim(), "");
+    const remoteBranch = await execFile("/usr/bin/git", ["rev-parse", "refs/heads/assistant/task-1"], { cwd: origin });
+    assert.equal(remoteBranch.stdout.trim(), record.preparedHead);
     assert.equal(network.at(-1), "deny-all");
   } finally {
     await rm(temp, { recursive: true, force: true });
   }
 });
+
+}

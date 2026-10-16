@@ -1,6 +1,6 @@
 {
   "name": "@bshaan77/eve-agent-developer",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.1",
   "type": "module",
   "description": "Reusable developer components for agent applications",
   "license": "MIT",

@@ -108,22 +108,6 @@ export function createSandboxWorkspace(options: {
       const result = await sandbox.run({ command: check.command, workingDirectory: root });
       return check.parse(result);
     },
-    async context() {
-      const instructions =
-        (await read("AGENTS.md")) ??
-        (await read("CLAUDE.md")) ??
-        "No repository instructions found";
-      const skills = [];
-      for (const path of await this.list())
-        if (/^\.agents\/skills\/.+\/SKILL\.md$/.test(path)) {
-          const text = await read(path);
-          if (text !== null)
-            skills.push({
-              path,
-              description: text.match(/^description:\s*(.+)$/m)?.[1] ?? "Read the skill before use",
-            });
-        }
-      return { instructions, skills };
-    },
+
   };
 }

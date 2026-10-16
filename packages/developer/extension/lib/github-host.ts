@@ -71,11 +71,46 @@ export function createGitHubHost(options: GitHubHostOptions): DeveloperHost {
   >();
   async function git(sandbox: VercelSandboxSession, args: string, root?: string) {
     const result = await sandbox.run({
-      command: `${quote(gitExecutable)} -c core.hooksPath=/dev/null -c core.fsmonitor=false -c commit.gpgsign=false -c credential.helper= ${args}`,
+      command: `GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_NO_REPLACE_OBJECTS=1 GIT_LITERAL_PATHSPECS=1 ${quote(gitExecutable)} -c core.hooksPath=/dev/null -c core.fsmonitor=false -c commit.gpgsign=false -c credential.helper= ${args}`,
       ...(root ? { workingDirectory: root } : {}),
     });
     if (result.exitCode !== 0) throw new Error("Git operation failed");
     return result.stdout.trim();
+  }
+  async function publicationConfiguration(sandbox: VercelSandboxSession, root: string) {
+    const inspect = `const fs=require('node:fs');const root=${JSON.stringify(root)};` +
+      `if(fs.realpathSync(root+'/.git')!==root+'/.git'||!fs.lstatSync(root+'/.git').isDirectory())throw Error();if(fs.lstatSync(root+'/.git/config').isSymbolicLink())throw Error();for(const rel of ['info/attributes','info/grafts','objects/info/alternates']){const file=root+'/.git/'+rel;try{if(fs.realpathSync(file)!==file||fs.lstatSync(file).isSymbolicLink()||fs.readFileSync(file).length)throw Error()}catch(e){if(e.code!=='ENOENT')throw e}}`;
+    const metadata = await sandbox.run({ command: `${quote(nodeExecutable)} -e ${quote(inspect)}`, workingDirectory: root });
+    if (metadata.exitCode !== 0) throw new Error("Unsafe repository publication metadata");
+    const config = await git(sandbox, "config --local --name-only --list", root);
+    // Only configuration produced by a normal clone/checkout is accepted.
+    // The one supported push setting is explicitly overridden at publication.
+    const allowed = /^(core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode)|remote\.origin\.(url|fetch)|branch\.[a-zA-Z0-9_./-]+\.(remote|merge)|extensions\.objectformat|push\.followtags)$/;
+    if (config.split("\n").filter(Boolean).some((key) => !allowed.test(key)))
+      throw new Error("Unsafe repository publication configuration");
+  }
+  async function verifyPreparedBytes(sandbox: VercelSandboxSession, record: WorkspaceRecord, workspace: Workspace) {
+    const diff = await workspace.diff();
+    const changed = (await git(sandbox, `diff-tree --no-commit-id --no-renames --name-only -z -r ${quote(record.baseCommit)} ${quote(record.preparedHead!)} --`, record.root)).split("\0").filter(Boolean).sort();
+    if (JSON.stringify(changed) !== JSON.stringify(diff.files.map((file) => file.path).sort()))
+      throw new Error("Prepared commit has unreviewed paths");
+    for (const file of diff.files) {
+      if (file.symlink || await workspace.canonicalPath(file.path) !== file.path)
+        throw new Error("Prepared commit has an unsafe file");
+      const bytes = await sandbox.readBinaryFile({ path: record.root + "/" + file.path });
+      const entries = (await git(sandbox, `ls-tree --full-tree -z ${quote(record.preparedHead!)} -- ${quote(file.path)}`, record.root)).split("\0").filter(Boolean);
+      if (bytes === null) {
+        if (entries.length) throw new Error("Prepared commit retained a deleted file");
+        continue;
+      }
+      const source = `const fs=require('node:fs');const s=fs.lstatSync(${JSON.stringify(record.root + "/" + file.path)});if(!s.isFile())throw Error();process.stdout.write(s.mode&0o111?'100755':'100644')`;
+      const mode = await sandbox.run({ command: `${quote(nodeExecutable)} -e ${quote(source)}`, workingDirectory: record.root });
+      if (mode.exitCode !== 0) throw new Error("Prepared commit mode verification failed");
+      const hash = createHash(record.preparedHead!.length === 64 ? "sha256" : "sha1")
+        .update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+      if (entries.length !== 1 || entries[0] !== `${mode.stdout.trim()} blob ${hash}\t${file.path}`)
+        throw new Error("Prepared commit bytes differ from reviewed workspace");
+    }
   }
   async function network<T>(
     sandbox: VercelSandboxSession,
@@ -163,6 +198,7 @@ export function createGitHubHost(options: GitHubHostOptions): DeveloperHost {
       if (policy.repository !== input.repository || policy.baseBranch !== input.baseBranch)
         throw new Error("Publication policy mismatch");
       await sandbox.setNetworkPolicy("deny-all");
+      await publicationConfiguration(sandbox, record.root);
       const branch = await git(sandbox, "branch --show-current", record.root);
       const head = await git(sandbox, "rev-parse HEAD", record.root);
       if (branch !== input.branch || head !== (record.preparedHead ?? record.baseCommit))
@@ -197,6 +233,7 @@ export function createGitHubHost(options: GitHubHostOptions): DeveloperHost {
         ))
       )
         throw new Error("Prepared commit differs from working tree");
+      await verifyPreparedBytes(sandbox, record, workspace);
       if (record.preparedFingerprint !== input.fingerprint)
         throw new Error("Prepared commit differs from review");
       const idempotencyKey = createHash("sha256").update(input.runId).digest("hex");
@@ -209,12 +246,13 @@ export function createGitHubHost(options: GitHubHostOptions): DeveloperHost {
       };
       const existing = await services.drafts.find(target);
       if (existing) return existing;
+      await publicationConfiguration(sandbox, record.root);
       await network(sandbox, input.repository, "push", async () => {
         await services.store.assertFence(input.repository, input.runId, input.fence);
         // Explicit URL/ref, never a repository-supplied pushurl; never force or merge.
         await git(
           sandbox,
-          `push -- https://github.com/${input.repository}.git ${quote(record.preparedHead! + ":refs/heads/" + input.branch)}`,
+          `push --no-follow-tags -- https://github.com/${input.repository}.git ${quote(record.preparedHead! + ":refs/heads/" + input.branch)}`,
           record.root
         );
       });

@@ -41,7 +41,7 @@ The host owns:
 
 - Durable, atomically bound run records and a shared per-repository lease store. `saveRun` must never rebind a run identity to another repository. Lease ownership must be checked after asynchronous operations.
 - Clone/reopen lifecycle and base commit, authenticated repository access, commit identity and constrained check commands.
-- Canonical file operations. The `/sandbox` export provides `createSandboxWorkspace` for Eve sandbox sessions, real-path validation, full git/untracked diff capture, repository instructions and skill discovery. Bind trusted absolute Node/git executables and check-result parsers.
+- Canonical file operations. The `/sandbox` export provides `createSandboxWorkspace` for Eve sandbox sessions, real-path validation, full git/untracked diff capture. The engine discovers repository instructions and skill descriptions through its guarded read path. Bind trusted absolute Node/git executables and check-result parsers.
 - Credential injection outside the sandbox process; closed default egress and revocation in `finally`. No authenticated connection is exposed to the model. Check commands must run without publication credentials and within a disposable provider boundary.
 - Idempotent tracker creation by run identity and private destination.
 - Reviewer model/provider provenance and fallback evidence. The engine rejects same-family fallback when independence is required.
@@ -62,3 +62,28 @@ Construct `createGitHubHost({ services, nodeExecutable, gitExecutable, commitIde
 The adapter closes network access in `finally`, commits without hooks/signing, checks the prepared commit's ancestry and exact content, pushes the reviewed commit SHA without force, and recovers a matching draft by hashed run key plus commit. Services must enforce live lease ownership, renew leases through asynchronous operations, stop/reap check subprocesses before later file operations, and make external publication idempotent. The shared adapter is not a distributed-store implementation. Sandbox isolation must exclude mounted host secrets and other consumers' workspaces.
 
 Local git/filesystem tests exercise this sequence with simulated network and draft APIs. They do not certify live Vercel credentials, GitHub access or cross-service atomicity.
+
+
+## Instruction and metadata permissions
+
+Initialization loads applicable root, ancestor and nested `AGENTS.md` files, using
+`CLAUDE.md` only when that directory has no `AGENTS.md`. Applicability follows the
+configured writable paths, or readable paths in a read-only policy. Every required
+instruction must also be explicitly covered by `readablePaths` and excluded from
+`protectedPaths`; a denied, symlinked or oversized applicable rule fails initialization.
+Caller policy must grant instruction reads separately when code reads cover only a
+subdirectory. Unrelated directories are not loaded. Skill descriptions and their
+paths are exposed only for readable, unprotected canonical `SKILL.md` files. Context
+is capped at 128 files and the configured `maxFileBytes` aggregate input/output
+budget. `Workspace.context` was removed from this unreleased candidate to prevent
+host metadata from bypassing these gates.
+
+Publication ignores global/system Git configuration and replace refs, allows only
+normal clone/branch local configuration, rejects hidden attributes/grafts/object
+alternates, and explicitly disables following tags. Raw prepared-commit blob hashes,
+file modes, deletions and the exact changed-path set must match the reviewed
+canonical worktree bytes. Attribute normalization that changes committed bytes
+therefore blocks publication, even when ordinary Git diff reports equality. These checks complement the reviewed
+commit fingerprint, exact branch refspec, disabled hooks and lease fence. Provider
+isolation must stop/reap repository check processes before publication; local file
+inspection alone cannot prevent a concurrently running malicious process.

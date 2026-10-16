@@ -54,7 +54,6 @@ export interface Workspace {
   list(): Promise<string[]>;
   diff(): Promise<DiffSnapshot>;
   runCheck(checkId: string): Promise<CheckResult>;
-  context(): Promise<{ instructions: string; skills: { path: string; description: string }[] }>;
 }
 export interface DeveloperHost {
   /** Atomic, durable per-repository lease. All instances share storage; callback fails on lost ownership.
@@ -253,6 +252,47 @@ export function createDeveloper(policyInput: DeveloperPolicy, host: DeveloperHos
       throw new Error("Path exceeds policy");
     return canonical;
   }
+  async function repositoryContext(workspace: Workspace, repo: RepositoryPolicy) {
+    const paths = await workspace.list();
+    const available = new Set(paths);
+    const scope = repo.writablePaths.length ? repo.writablePaths : repo.readablePaths;
+    const relevantDirectory = (directory: string) =>
+      directory === "." || scope.some((path) => within(directory, path) || within(path, directory));
+    const rulePaths = paths.filter((path) => /(^|\/)(AGENTS|CLAUDE)\.md$/.test(path))
+      .filter((path) => {
+        const directory = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : ".";
+        return relevantDirectory(directory) &&
+          (!path.endsWith("CLAUDE.md") || !available.has(path.replace(/CLAUDE\.md$/, "AGENTS.md")));
+      }).sort((a, b) => a.split("/").length - b.split("/").length || a.localeCompare(b));
+    const skills: { path: string; description: string }[] = [];
+    const instructions: string[] = [];
+    let bytes = 0;
+    let count = 0;
+    const readContext = async (path: string) => {
+      if (++count > 128) throw new Error("Repository context exceeds configured limit");
+      const checked = await checkedPath(workspace, repo, path, false);
+      const content = await workspace.read(checked);
+      if (content === null) throw new Error("Repository context changed during discovery");
+      bytes += Buffer.byteLength(content);
+      if (bytes > policy.maxFileBytes) throw new Error("Repository context exceeds configured limit");
+      return content;
+    };
+    for (const path of rulePaths) {
+      // Applicable rules must be explicitly readable. Never silently omit a denied rule.
+      const content = await readContext(path);
+      instructions.push(`Repository instructions (${path}):\n${content}`);
+    }
+    for (const path of paths.filter((path) => /^\.agents\/skills\/.+\/SKILL\.md$/.test(path)).sort()) {
+      // Undisclosed skills expose neither content, descriptions nor pathnames.
+      try { await checkedPath(workspace, repo, path, false); } catch { continue; }
+      const content = await readContext(path);
+      skills.push({ path, description: content.match(/^description:\s*(.+)$/m)?.[1] ?? "Read the skill before use" });
+    }
+    const context = { instructions: instructions.join("\n\n"), skills };
+    if (Buffer.byteLength(JSON.stringify(context)) > policy.maxFileBytes)
+      throw new Error("Repository context exceeds configured limit");
+    return context;
+  }
   return {
     async initialize(
       runId: string,
@@ -276,8 +316,9 @@ export function createDeveloper(policyInput: DeveloperPolicy, host: DeveloperHos
         )
           throw new Error("Run identity already bound");
         const workspace = await host.workspace(runId, repo, input.branch, !existing);
+        const context = await repositoryContext(workspace, repo);
         if (!existing) await host.saveRun(runId, { ...input });
-        return workspace.context();
+        return context;
       });
     },
     read: (runId: string, path: string) =>
