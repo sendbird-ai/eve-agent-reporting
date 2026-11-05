@@ -20,7 +20,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepublishOnly": "npm run build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "access:prepare": "node scripts/access-artifact/prepare.mjs",
+    "access:verify": "node scripts/access-artifact/verify.mjs",
+    "test:access-artifact": "node --test test/access-artifact/*.test.mjs"
   },
   "publishConfig": {
     "access": "public"

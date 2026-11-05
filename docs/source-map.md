@@ -11,6 +11,10 @@ read their manifests and installed artifacts before claiming those modules ship.
 | Dependency resolution | `package-lock.json` | Use `npm ci`; keep intentional manifest/lock changes together. |
 | Compiler output | `tsconfig.json` | Build emits `dist/`; inspect emitted JS and declarations for release changes. |
 | CI and publishing | `.github/workflows/` | Read current triggers and required checks; local skills do not grant publication rights. |
+| Optional access shapes and validation | `packages/access/src/schemas.ts` | Strict schemas are authoritative; inferred types/declarations, evaluator and synthetic fixtures move together. |
+| Optional access enforcement and host trust | `packages/access/src/evaluator.ts`, `host.ts`, `client.ts`, `delegation.ts` | Evidence must originate in authenticated host bindings; read `packages/access/README.md` for every required guard and unsupported path. |
+| Access artifact and SDK matrix | `packages/access/package.json`, `packages/access/PROVENANCE.md`, `packages/access/src/eve.ts` | Independently versioned; no mandatory reporting dependency. Inspect exact packed files and pinned SDK declarations; explicit host guards are not an extension interceptor. |
+| Access vendoring baseline and read-only verification | `scripts/access-artifact/prepare.mjs`, `verify.mjs`, `core.mjs`, `artifacts/access/0.1.0/baseline.json` | Schema validation is in code; regenerate the baseline from the reviewed source/archive with [the update procedure](access-vendoring.md). Tools and baseline remain outside packed runtime files. |
 | Contributor procedures | `.agents/skills/`, `docs/workflow.md` | These guide contributors; they are not installed runtime subagents. |
 
 ## Data and schema boundaries

@@ -1,0 +1,15 @@
+{
+  "name": "example-operations-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.22.2",
+    "npm": "10.9.2"
+  },
+  "packageManager": "npm@10.9.2",
+  "dependencies": {
+    "@bshaan77/agent-access": "file:vendor/agent-access.tgz",
+    "zod": "4.6.7"
+  }
+}
