@@ -70,3 +70,7 @@ subagent installation. See [SECURITY.md](SECURITY.md) for vulnerability reportin
 The independent [access candidate](packages/access/README.md) provides strict
 contracts, a deterministic evaluator and explicit host guards. It is separately
 versioned and installed; reporting does not import it or require an agent SDK.
+
+Access artifact adoption uses one generated baseline and a read-only archive/lock/
+installed-file verifier. See [vendoring and coordinated updates](docs/access-vendoring.md)
+for exact commands, approved-root inputs, supported installation layout and proof limits.

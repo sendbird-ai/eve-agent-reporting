@@ -23,6 +23,8 @@ jobs:
         working-directory: packages/access
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # The canonical baseline pins a reviewed ancestor commit.
       - uses: actions/setup-node@v4
         with:
           node-version: 24.22.2
@@ -37,3 +39,6 @@ jobs:
           npx --yes npm@10.9.2 run check:sdk -- "$RUNNER_TEMP/access-sdk"
       - name: Verify installed artifact and dependency isolation
         run: npx --yes npm@10.9.2 run check:artifact -- "$RUNNER_TEMP/access-artifact"
+      - name: Verify reproducible access vendoring and adversarial drift checks
+        working-directory: .
+        run: npx --yes --package=npm@10.9.2 -c 'npm run test:access-artifact'
