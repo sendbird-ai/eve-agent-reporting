@@ -15,3 +15,25 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
+
+  access:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/access
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.2
+      - run: npx --yes npm@10.9.2 ci --ignore-scripts
+      - run: npx --yes npm@10.9.2 run typecheck
+      - run: npx --yes npm@10.9.2 test
+      - name: Inspect exact SDK declarations
+        run: |
+          mkdir -p "$RUNNER_TEMP/access-sdk"
+          npx --yes npm@10.9.2 pack eve@0.27.2 --pack-destination "$RUNNER_TEMP/access-sdk"
+          npx --yes npm@10.9.2 pack eve@0.66.2 --pack-destination "$RUNNER_TEMP/access-sdk"
+          npx --yes npm@10.9.2 run check:sdk -- "$RUNNER_TEMP/access-sdk"
+      - name: Verify installed artifact and dependency isolation
+        run: npx --yes npm@10.9.2 run check:artifact -- "$RUNNER_TEMP/access-artifact"

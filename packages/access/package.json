@@ -1,0 +1,48 @@
+{
+  "name": "@bshaan77/agent-access",
+  "version": "0.1.0",
+  "description": "Optional fail-closed agent access contracts and host guards",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sendbird-ai/eve-agent-reporting.git",
+    "directory": "packages/access"
+  },
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=10 <11"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./eve": {
+      "types": "./dist/eve.d.ts",
+      "import": "./dist/eve.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "PROVENANCE.md",
+    "provenance.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/provenance.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "check:artifact": "node scripts/check-artifact.mjs",
+    "check:sdk": "node scripts/check-sdk.mjs",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "typescript": "5.7.3"
+  }
+}
